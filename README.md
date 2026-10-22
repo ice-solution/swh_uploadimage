@@ -19,6 +19,19 @@ npm run seed
 npm run dev
 ```
 
+## Admin Panel
+
+瀏覽器打開：
+
+- 本機：`http://localhost:<PORT>/admin/`
+- Production：`https://swhimage.ice-solution.hk/admin/`
+
+功能：
+
+- 登入（JWT，過期自動 refresh）
+- 圖片：列表預覽、QR、剩餘時效、上傳、刪除
+- Theme：查看當前 phase、新增／編輯／刪除日期區間
+
 ## API
 
 ### Auth
@@ -66,8 +79,10 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 
 | Method | Path | Auth | 說明 |
 |--------|------|------|------|
+| GET | `/api/upload` | Bearer | 列表（`?includeExpired=1` 含過期） |
 | POST | `/api/upload` | Bearer | 上傳圖片（form field: `image`） |
 | GET | `/api/upload/:id` | Bearer | 查詢上傳記錄 |
+| DELETE | `/api/upload/:id` | Bearer | 刪除圖片與 QR 檔案 |
 
 ```bash
 curl -X POST http://localhost:3000/api/upload \
@@ -91,6 +106,40 @@ curl -X POST http://localhost:3000/api/upload \
 ```
 
 靜態檔案路徑：`GET /files/<filename>`（公開，但 2 小時後會被清理）。
+
+### Theme / Phase
+
+依 **不重疊** 的日期區間決定 phase（`1` / `2` / `3`）。
+
+| Method | Path | Auth | 說明 |
+|--------|------|------|------|
+| GET | `/api/theme/current` | 否 | 依今天（或 `?date=YYYY-MM-DD`）回傳當前 phase |
+| GET | `/api/theme` | 否 | 列出全部 theme |
+| GET | `/api/theme/:id` | 否 | 查單一 theme |
+| POST | `/api/theme` | Bearer | 新增（會檢查日期重疊） |
+| PUT | `/api/theme/:id` | Bearer | 更新 |
+| DELETE | `/api/theme/:id` | Bearer | 刪除 |
+
+```bash
+# 查今天所屬 phase
+curl http://localhost:3000/api/theme/current
+
+# 查指定日期
+curl "http://localhost:3000/api/theme/current?date=2026-06-15"
+
+# 建立 theme（需登入）
+curl -X POST http://localhost:3000/api/theme \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{"phase":1,"start_date":"2026-01-01","end_date":"2026-04-30"}'
+```
+
+預設 seed：
+
+```bash
+npm run seed:themes
+# 覆蓋重設：npm run seed:themes -- --force
+```
 
 ## 時限設計
 
@@ -134,4 +183,5 @@ Node 需 listen `127.0.0.1:3000`（可用 pm2 / systemd）。VirtualHost 會設 
 - 或 `postman/SWH_Upload_Image.local.postman_environment.json`（本機）
 
 建議順序：`Login` → `Upload Image`（選檔案欄位 `image`）→ `Open Image URL` / `Open QR Code URL`。  
+Theme：`Get Current Theme` 或 `Get Theme by Date`；管理請先 `Login` 再 `Create Theme`。  
 若收到 `TOKEN_EXPIRED`，先跑 `Refresh Token` 再重試。

@@ -77,9 +77,48 @@ async function uploadImage(req, res, next) {
   }
 }
 
+function serializeUpload(record) {
+  const now = Date.now();
+  const expiresAtMs = record.expiresAt.getTime();
+  return {
+    id: record._id,
+    imageUrl: record.imageUrl,
+    qrcodeUrl: record.qrcodeUrl,
+    expiresAt: record.expiresAt,
+    createdAt: record.createdAt,
+    user: record.user
+      ? {
+          id: record.user._id || record.user,
+          username: record.user.username || null,
+        }
+      : null,
+    expired: expiresAtMs <= now,
+    remainingMs: Math.max(0, expiresAtMs - now),
+  };
+}
+
+async function listUploads(req, res, next) {
+  try {
+    const includeExpired = String(req.query.includeExpired || '') === '1';
+    const filter = includeExpired ? {} : { expiresAt: { $gt: new Date() } };
+
+    const records = await Upload.find(filter)
+      .populate('user', 'username')
+      .sort({ createdAt: -1 })
+      .limit(200);
+
+    return res.json({
+      success: true,
+      data: records.map(serializeUpload),
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function getUpload(req, res, next) {
   try {
-    const record = await Upload.findById(req.params.id);
+    const record = await Upload.findById(req.params.id).populate('user', 'username');
     if (!record) {
       return res.status(404).json({
         success: false,
@@ -96,12 +135,41 @@ async function getUpload(req, res, next) {
 
     return res.json({
       success: true,
-      data: {
-        id: record._id,
-        imageUrl: record.imageUrl,
-        qrcodeUrl: record.qrcodeUrl,
-        expiresAt: record.expiresAt,
-      },
+      data: serializeUpload(record),
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+function unlinkQuiet(filePath) {
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error(`Failed to delete ${filePath}:`, err.message);
+    }
+  }
+}
+
+async function deleteUpload(req, res, next) {
+  try {
+    const record = await Upload.findById(req.params.id);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: 'Upload not found',
+      });
+    }
+
+    unlinkQuiet(path.join(UPLOAD_DIR, record.imageFilename));
+    unlinkQuiet(path.join(UPLOAD_DIR, record.qrcodeFilename));
+    await record.deleteOne();
+
+    return res.json({
+      success: true,
+      message: 'Upload deleted',
+      data: { id: record._id },
     });
   } catch (err) {
     return next(err);
@@ -110,5 +178,7 @@ async function getUpload(req, res, next) {
 
 module.exports = {
   uploadImage,
+  listUploads,
   getUpload,
+  deleteUpload,
 };

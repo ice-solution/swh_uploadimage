@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SWH Admin — Upload & Theme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- Login -->
+  <section id="login-view" class="login-view hidden">
+    <div class="login-panel">
+      <p class="brand">SWH Image</p>
+      <h1>Admin Panel</h1>
+      <p class="lede">登入後可管理上傳圖片與 Theme / Phase 區間。</p>
+      <form id="login-form" class="stack">
+        <label>
+          <span>Username</span>
+          <input id="login-username" name="username" autocomplete="username" required value="admin" />
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit" class="btn primary">登入</button>
+        <p id="login-error" class="error" role="alert" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- App shell -->
+  <div id="app-view" class="app-view hidden">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand">SWH Image</span>
+        <span class="topbar-sub">Admin</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="uploads" role="tab" aria-selected="true">圖片</button>
+        <button type="button" class="tab" data-tab="themes" role="tab" aria-selected="false">Theme</button>
+      </nav>
+      <div class="topbar-actions">
+        <span id="session-user" class="session-user"></span>
+        <button type="button" id="btn-logout" class="btn ghost">登出</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Uploads -->
+      <section id="panel-uploads" class="panel" role="tabpanel">
+        <div class="panel-head">
+          <div>
+            <h2>上傳圖片</h2>
+            <p class="muted">預覽圖片與 QR Code，剩餘時效約 2 小時。可手動刪除。</p>
+          </div>
+          <div class="panel-tools">
+            <label class="check">
+              <input type="checkbox" id="include-expired" />
+              <span>顯示已過期</span>
+            </label>
+            <button type="button" id="btn-refresh-uploads" class="btn">重新整理</button>
+            <label class="btn primary file-btn">
+              上傳圖片
+              <input type="file" id="upload-file" accept="image/jpeg,image/png,image/gif,image/webp" hidden />
+            </label>
+          </div>
+        </div>
+        <p id="uploads-status" class="status" hidden></p>
+        <div id="uploads-grid" class="uploads-grid"></div>
+        <p id="uploads-empty" class="empty hidden">目前沒有圖片記錄。</p>
+      </section>
+
+      <!-- Themes -->
+      <section id="panel-themes" class="panel hidden" role="tabpanel">
+        <div class="panel-head">
+          <div>
+            <h2>Theme / Phase</h2>
+            <p class="muted">phase 為 1 / 2 / 3，日期區間不可重疊。系統依日期自動判斷當前 phase。</p>
+          </div>
+          <div class="panel-tools">
+            <button type="button" id="btn-refresh-themes" class="btn">重新整理</button>
+          </div>
+        </div>
+
+        <div id="current-theme" class="current-theme"></div>
+
+        <div class="theme-layout">
+          <form id="theme-form" class="theme-form stack">
+            <h3 id="theme-form-title">新增 Theme</h3>
+            <input type="hidden" id="theme-id" />
+            <label>
+              <span>Phase</span>
+              <select id="theme-phase" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+            <label>
+              <span>Start date</span>
+              <input id="theme-start" type="date" required />
+            </label>
+            <label>
+              <span>End date</span>
+              <input id="theme-end" type="date" required />
+            </label>
+            <div class="row">
+              <button type="submit" class="btn primary" id="theme-submit">儲存</button>
+              <button type="button" class="btn ghost" id="theme-cancel" hidden>取消編輯</button>
+            </div>
+            <p id="theme-error" class="error" role="alert" hidden></p>
+          </form>
+
+          <div class="theme-table-wrap">
+            <table class="theme-table">
+              <thead>
+                <tr>
+                  <th>Phase</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="themes-body"></tbody>
+            </table>
+            <p id="themes-empty" class="empty hidden">尚未設定任何 theme。</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -13,7 +13,9 @@
     { "key": "refreshToken", "value": "" },
     { "key": "uploadId", "value": "" },
     { "key": "imageUrl", "value": "" },
-    { "key": "qrcodeUrl", "value": "" }
+    { "key": "qrcodeUrl", "value": "" },
+    { "key": "themeId", "value": "" },
+    { "key": "queryDate", "value": "2026-06-15" }
   ],
   "item": [
     {
@@ -216,7 +218,134 @@
       ]
     },
     {
-      "name": "3. Health",
+      "name": "3. Theme / Phase",
+      "item": [
+        {
+          "name": "Get Current Theme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Current theme has phase 1|2|3', function () {",
+                  "  if (pm.response.code === 404) { return; }",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect([1, 2, 3]).to.include(json.data.phase);",
+                  "  pm.collectionVariables.set('themeId', json.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/theme/current",
+            "description": "Resolve phase from today's date (non-overlapping ranges)."
+          }
+        },
+        {
+          "name": "Get Theme by Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/theme/current?date={{queryDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "theme", "current"],
+              "query": [
+                { "key": "date", "value": "{{queryDate}}", "description": "YYYY-MM-DD" }
+              ]
+            },
+            "description": "Resolve phase for a specific date."
+          }
+        },
+        {
+          "name": "List Themes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/theme"
+          }
+        },
+        {
+          "name": "Create Theme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('themeId', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phase\": 1,\n  \"start_date\": \"2026-01-01\",\n  \"end_date\": \"2026-04-30\"\n}"
+            },
+            "url": "{{baseUrl}}/api/theme",
+            "description": "phase must be 1, 2, or 3. Date ranges must not overlap."
+          }
+        },
+        {
+          "name": "Get Theme by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/theme/{{themeId}}"
+          }
+        },
+        {
+          "name": "Update Theme",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phase\": 2,\n  \"start_date\": \"2026-05-01\",\n  \"end_date\": \"2026-08-31\"\n}"
+            },
+            "url": "{{baseUrl}}/api/theme/{{themeId}}"
+          }
+        },
+        {
+          "name": "Delete Theme",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/theme/{{themeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Health",
       "item": [
         {
           "name": "Health Check",
